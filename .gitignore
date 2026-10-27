@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+*.tgz
+*.tsbuildinfo
+*.log
+.env
+.DS_Store
+
+# Editor and agent tooling, not versioned in the other LigueLead repositories
+.claude/
+.vscode/
+.agents/

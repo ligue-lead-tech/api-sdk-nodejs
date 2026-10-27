@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    steps:
+      # The tags too: the mirror test refuses a version older than one already tagged.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-tags: true
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:tooling
+      - run: npm run check:structure
+      - run: npm run typecheck
+      - run: npm run coverage
+      - run: npm run build
+      - run: npm run check:package
+
+      - name: Load the build from CommonJS and from ESM
+        run: |
+          node -e "require('@liguelead/api-sdk')"
+          node --input-type=module -e "import { LigueLeadClient } from '@liguelead/api-sdk'"
+
+      # The brand is LigueLead. Hosts (api.liguelead.com.br) and env vars (LIGUELEAD_*) are not
+      # matched: the search is case-sensitive.
+      - name: Brand spelling
+        run: |
+          if grep -rn "Liguelead" src tests examples README.md; then
+            echo "::error::The brand is spelled LigueLead"
+            exit 1
+          fi
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  test:
+    name: test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
