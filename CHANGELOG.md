@@ -5,6 +5,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the ve
 
 ## [Unreleased]
 
+## [1.3.2] — 2026-10-27
+
+### Changed
+
+- Published through npm trusted publishing: the public repository's release workflow authenticates
+  to npm with its own OIDC identity, with no npm token anywhere, and the version carries provenance.
+  The code is the same as in 1.3.1.
+
 ## [1.3.1] — 2026-10-26
 
 ### Fixed

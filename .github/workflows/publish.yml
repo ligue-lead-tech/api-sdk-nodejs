@@ -58,27 +58,45 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # The only job that sees NPM_TOKEN (the `npm` environment, which only `v*` tags can use). It runs no
-  # code from the repository and no install scripts: it publishes the tarball `build` produced.
+  # The only job npm trusts: the package's trusted publisher on npmjs.com is this workflow in the `npm`
+  # environment (which only `v*` tags can use), through the job's OIDC token — there is no npm token to
+  # leak. It runs no code from the repository and no install scripts: it publishes the tarball `build`
+  # produced.
   publish:
     needs: build
     runs-on: ubuntu-latest
     environment: npm
     permissions:
       contents: read
-      id-token: write   # npm provenance
+      id-token: write   # trusted publishing and npm provenance
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
+      # Trusted publishing needs npm 11.5.1 or later; an older npm (an early Node 24) would not even try
+      # it and fail later with a misleading auth error. Nothing is installed: the npm Node ships is
+      # checked.
+      - run: |
+          node -e '
+            const version = process.argv[1];
+            const parts = version.split(".").map(Number);
+            const [major, minor, patch] = parts;
+            // A version that is not three plain numbers (a pre-release, unexpected output) stops too.
+            if (parts.length !== 3 || !parts.every(Number.isInteger)
+              || major < 11 || (major === 11 && (minor < 5 || (minor === 5 && patch < 1)))) {
+              console.log(`::error::npm ${version} cannot publish through trusted publishing (11.5.1 or later).`);
+              process.exit(1);
+            }
+          ' "$(npm --version)"
+
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: package
           path: package
 
-      # The token can write every package of the organization: publish this one, at this version, only.
+      # Publish only what this tag names: @liguelead/api-sdk at the tag's version.
       - id: published
         env:
           TAG: ${{ github.ref_name }}
@@ -101,9 +119,10 @@ jobs:
 
       - if: steps.published.outputs.published == 'false'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           TARBALL: ${{ steps.published.outputs.tarball }}
-        run: npm publish "$TARBALL" --provenance --access public --ignore-scripts
+        # Verbose: when npm refuses the OIDC exchange it only says why at this level, and a re-run uses
+        # the workflow of the tag, which cannot change. npm redacts tokens in its logs.
+        run: npm publish "$TARBALL" --provenance --access public --ignore-scripts --loglevel verbose
 
   release:
     needs: publish
