@@ -5,6 +5,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the ve
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-10-26
+
+### Fixed
+
+- The first version on npm as `@liguelead/api-sdk`. Version 1.3.0 is tagged in the public repository
+  but never reached npm: its publication passed the package as `package/<file>.tgz`, which npm reads
+  as a GitHub repository. The code is the same as in 1.3.0.
+
 ## [1.3.0] — 2026-10-26
 
 ### Changed

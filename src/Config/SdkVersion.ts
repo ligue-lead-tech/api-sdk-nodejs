@@ -5,5 +5,5 @@
  * the two disagree.
  */
 export class SdkVersion {
-  static readonly current = '1.3.0';
+  static readonly current = '1.3.1';
 }

@@ -446,8 +446,8 @@ To contribute, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Releases
 
-From 1.3.0 on, each version is published to npm as `@liguelead/api-sdk`, with npm provenance, and
-tagged `vX.Y.Z` here. `LigueLeadClient.VERSION` matches the version of the package. What changed in
+From 1.3.1 on, each version is published to npm as `@liguelead/api-sdk`, with npm provenance, and
+tagged `vX.Y.Z` here (1.3.0 is tagged, but never reached npm). `LigueLeadClient.VERSION` matches the version of the package. What changed in
 each one is in the [CHANGELOG](CHANGELOG.md).
 
 ## License

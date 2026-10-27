@@ -83,7 +83,8 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          tarball=$(ls package/*.tgz)
+          # `./` keeps npm from reading `package/<file>.tgz` as a GitHub `owner/repo` shorthand.
+          tarball=$(ls ./package/*.tgz)
           name=$(tar -xOzf "$tarball" package/package.json | node -p "JSON.parse(require('fs').readFileSync(0)).name")
           version=$(tar -xOzf "$tarball" package/package.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")
           if [ "$name" != "@liguelead/api-sdk" ] || [ "v$version" != "$TAG" ]; then
