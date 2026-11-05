@@ -5,6 +5,40 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the ve
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-11-05
+
+A major release: the entries marked **Breaking** stop TypeScript code written against 1.x from
+compiling.
+
+### Changed
+
+- **Breaking for TypeScript:** the voice action types follow the API, which no longer answers the
+  secrets. `VoiceAction.credentials`
+  is now `VoiceActionPublicCredentials` (`tenant` for Microsoft, and `client_id`), so code that read
+  `client_secret` or `refresh_token` off a response, which the API now always leaves out, no longer
+  compiles.
+- `voiceActions.update` takes `VoiceActionCredentialsUpdate`: only `client_id` is required, and a
+  secret left out keeps the stored one, so the credentials a read returned can be sent back. Merged
+  over the stored ones they must be complete for the action's provider, or the API answers a 422. Full
+  `MicrosoftCredentials` and `GoogleCredentials` are still accepted, and `create` is unchanged.
+- **Breaking for TypeScript:** a card template, and every card of a carousel, needs an image. `RcsCardTemplateCreateParams`
+  and `RcsCarouselCard` take `media_url` or `media_file` (never both), so a `createCard` or a
+  `createCarousel` card without one no longer compiles. The API refuses one too (422,
+  `LigueLeadValidationError`). A template with no image is a text one, with no buttons
+  (`createText`). Templates created before keep working, and `RcsTemplateCard.media_url`, in what
+  `rcs.templates.list` returns, stays optional for them.
+
+### Added
+
+- The `VoiceActionPublicCredentials` and `VoiceActionCredentialsUpdate` types.
+
+### Removed
+
+- **Breaking for TypeScript:** `VoiceAction.authorization_token`, which the API no longer answers. An
+  `authorization_token` is still sent on `create` and `update`.
+- **Breaking for TypeScript:** the `RcsOptionalMediaSource` type, the "one media or none" of the
+  cards. Use `RcsMediaSource`.
+
 ## [1.3.2] — 2026-10-27
 
 ### Changed

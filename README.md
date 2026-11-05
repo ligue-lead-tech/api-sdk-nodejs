@@ -194,9 +194,32 @@ await client.rcs.templates.createCard({
 const templates = await client.rcs.templates.list();
 ```
 
-There is also `createMedia` (header, body and one media item) and `createCarousel` (2 to 10 cards,
-all with the same number and type of buttons). The types do not let `media_url` and `media_file`
-through together. The media in `media_file` travels inside the JSON, a third larger than the file,
+A card always carries an image, in `media_url` or `media_file`, and it must be an image (JPEG,
+PNG, GIF or WEBP): the API refuses any other content on a card. A template with no image has no
+buttons either, and is a text one (`createText`). There is also `createMedia` (header, body and one
+image or video) and `createCarousel` (2 to 10 cards, each with its own image, all with the same
+number and type of buttons):
+
+```ts
+const card = (header: string, image: string) => ({
+  header,
+  body: 'Toque para ver',
+  media_url: image,
+  buttons: [{ type: 'open_url' as const, title: 'Ver', url: 'https://loja.exemplo.com.br' }],
+});
+
+await client.rcs.templates.createCarousel({
+  agent_id: agent.id,
+  title: 'Vitrine',
+  cards: [
+    card('Tênis', 'https://loja.exemplo.com.br/tenis.png'),
+    card('Mochila', 'https://loja.exemplo.com.br/mochila.png'),
+  ],
+});
+```
+
+The types refuse a card or a carousel card without media, and `media_url` and `media_file`
+together; they cannot tell an image from a video, which the API checks. The media in `media_file` travels inside the JSON, a third larger than the file,
 and the request goes through API Gateway and Lambda, which cap the body at around 6 MB: for large
 media, host the file and use `media_url`.
 
@@ -223,7 +246,13 @@ The prompt limit depends on the engine (2000 characters on `lumen-mini`, 25000 o
 
 The **voice action** is what the agent can do during the call — `SCHEDULE_EVENT` and `SEND_EMAIL`
 (Microsoft or Google), `SEND_SMS`, `TRANSFER_CALL` and `HTTP_WEBHOOK` —, attached to the agent through
-`action_id`. The response carries the credentials as they were stored: do not log it.
+`action_id`. The responses never carry the secrets (`client_secret`, `refresh_token`,
+`authorization_token`): `credentials` comes back with `tenant` (Microsoft) and `client_id` only. On
+`update`, a secret left out keeps the stored one and one sent replaces it, so the credentials a read
+returned can be sent back as they are; merged over the stored ones they must be complete for the
+provider, or the API answers a 422 (`LigueLeadValidationError`). When you change `client_id` or
+`tenant`, send the new client's secret (and, for Google, its `refresh_token`) along: the API does not
+check that a kept secret belongs to the new client.
 
 ```ts
 const action = await client.voiceActions.create({

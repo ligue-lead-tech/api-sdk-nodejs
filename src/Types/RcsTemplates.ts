@@ -33,8 +33,12 @@ export interface RcsDialCallButton {
 export type RcsTemplateButton = RcsReplyButton | RcsOpenUrlButton | RcsDialCallButton;
 
 /**
- * The image or video of a template: a public `https://` URL, or the file itself as a base64 data URI
+ * The media of a template: a public `https://` URL, or the file itself as a base64 data URI
  * (`data:image/png;base64,…` — a `DataUri` is written as one). Never both.
+ *
+ * It serves the media template (`createMedia`: an image or a video) and the cards (`createCard` and
+ * each carousel card: an image only — JPEG, PNG, GIF or WEBP). The type cannot tell an image from a
+ * video; the API refuses anything but an image on a card.
  */
 export type RcsMediaSource =
   | {
@@ -45,12 +49,6 @@ export type RcsMediaSource =
     media_file: string | DataUri;
     media_url?: never
   };
-
-/** Media is optional on cards: one source, or none. */
-export type RcsOptionalMediaSource = RcsMediaSource | {
-  media_url?: never;
-  media_file?: never
-};
 
 /** Fields every template takes. */
 export interface RcsTemplateBaseParams {
@@ -77,15 +75,22 @@ export type RcsMediaTemplateCreateParams = RcsTemplateBaseParams & RcsMediaSourc
   body: string;
 };
 
-/** Body of `rcs.templates.createCard`: a rich card with 1 to 4 buttons and optional media. */
-export type RcsCardTemplateCreateParams = RcsTemplateBaseParams & RcsOptionalMediaSource & {
+/**
+ * Body of `rcs.templates.createCard`: a rich card with an image, a header, a body and 1 to 4 buttons.
+ * The image is required, and must be an image (JPEG, PNG, GIF or WEBP): the API refuses other
+ * content, a video included. A template with no image and no buttons is a text one (`createText`).
+ */
+export type RcsCardTemplateCreateParams = RcsTemplateBaseParams & RcsMediaSource & {
   header: string;
   body: string;
   buttons: RcsTemplateButton[];
 };
 
-/** One card of a carousel: up to 2 buttons, the same count and types in every card. */
-export type RcsCarouselCard = RcsOptionalMediaSource & {
+/**
+ * One card of a carousel: an image (JPEG, PNG, GIF or WEBP; the API refuses other content) and up
+ * to 2 buttons, the same count and types in every card.
+ */
+export type RcsCarouselCard = RcsMediaSource & {
   header: string;
   body: string;
   buttons: RcsTemplateButton[];
@@ -111,6 +116,10 @@ export type RcsTemplateType = OpenEnum<'text' | 'media' | 'card' | 'carousel'>;
 export interface RcsTemplateCard {
   header: string;
   body: string;
+  /**
+   * Every carousel created now has one; a template created before cards required an image may
+   * still come without it.
+   */
   media_url?: string;
   buttons?: RcsTemplateButton[];
 }

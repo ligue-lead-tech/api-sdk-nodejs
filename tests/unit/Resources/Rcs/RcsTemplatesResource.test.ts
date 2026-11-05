@@ -63,7 +63,7 @@ describe('client.rcs.templates', () => {
   });
 
   it('creates a carousel', async () => {
-    const card = { header: 'A', body: 'a', buttons: [{ type: 'reply' as const, title: 'Ver' }] };
+    const card = { header: 'A', body: 'a', media_url: 'https://cdn.example.com/a.png', buttons: [{ type: 'reply' as const, title: 'Ver' }] };
     const params = { agent_id: AGENT_ID, title: 'Carousel', cards: [card, { ...card, header: 'B' }] };
 
     appApi().post('/v1/rcs/templates/carousel', params).reply(201, created());
@@ -76,11 +76,11 @@ describe('client.rcs.templates', () => {
       .post('/v1/rcs/templates/carousel')
       .reply(422, { error: [{ field: 'cards.1.buttons', message: 'Card 2 has 0 button(s) but card 1 has 1.' }] });
 
-    const card = { header: 'A', body: 'a', buttons: [{ type: 'reply' as const, title: 'Ver' }] };
+    const card = { header: 'A', body: 'a', media_url: 'https://cdn.example.com/a.png', buttons: [{ type: 'reply' as const, title: 'Ver' }] };
     const request = createClient().rcs.templates.createCarousel({
       agent_id: AGENT_ID,
       title: 'Carousel',
-      cards: [card, { header: 'B', body: 'b', buttons: [] }],
+      cards: [card, { header: 'B', body: 'b', media_url: 'https://cdn.example.com/b.png', buttons: [] }],
     });
 
     await expect(request).rejects.toBeInstanceOf(LigueLeadValidationError);

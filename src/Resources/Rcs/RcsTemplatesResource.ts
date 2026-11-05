@@ -79,12 +79,17 @@ export class RcsTemplatesResource extends ApiResource {
   }
 
   /**
-   * Creates a rich card: header, body, 1 to 4 buttons and optional media.
+   * Creates a rich card: an image, a header, a body and 1 to 4 buttons. The media must be an image
+   * (JPEG, PNG, GIF or WEBP); the API refuses any other content on a card.
    *
-   * @param {RcsCardTemplateCreateParams} params - Agent, title, header, body and buttons.
+   * @param {RcsCardTemplateCreateParams} params - Agent, title, header, body, buttons and
+   *   `media_url` or `media_file`.
    * @param {RequestOptions} [options] - Per-call options.
    *
-   * @throws {LigueLeadValidationError} When the body is refused.
+   * @throws {LigueLeadValidationError} When the body is refused, for example when the card has no
+   *   image.
+   * @throws {LigueLeadUnsupportedMediaTypeError} When the media is not a supported image format.
+   * @throws {LigueLeadPayloadTooLargeError} When the media is too large.
    *
    * @returns {Promise<RcsTemplateCreated>} The template id, title and agent.
    */
@@ -100,13 +105,17 @@ export class RcsTemplatesResource extends ApiResource {
   }
 
   /**
-   * Creates a carousel of 2 to 10 cards. Every card must have the same number of buttons, of the
-   * same types in the same order.
+   * Creates a carousel of 2 to 10 cards. Every card needs an image (JPEG, PNG, GIF or WEBP; the API
+   * refuses any other content), and the same number of buttons, of the same types in the same order.
    *
-   * @param {RcsCarouselTemplateCreateParams} params - Agent, title and cards.
+   * @param {RcsCarouselTemplateCreateParams} params - Agent, title and cards, each with `media_url`
+   *   or `media_file`.
    * @param {RequestOptions} [options] - Per-call options.
    *
-   * @throws {LigueLeadValidationError} When the body is refused, cards out of step included.
+   * @throws {LigueLeadValidationError} When the body is refused, for example when a carousel card has
+   *   no image or the cards' buttons are out of step.
+   * @throws {LigueLeadUnsupportedMediaTypeError} When the media is not a supported image format.
+   * @throws {LigueLeadPayloadTooLargeError} When the media is too large.
    *
    * @returns {Promise<RcsTemplateCreated>} The template id, title and agent.
    */

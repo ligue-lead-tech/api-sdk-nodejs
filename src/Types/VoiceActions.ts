@@ -103,6 +103,36 @@ export type VoiceActionCreateParams =
   | TransferCallActionParams
   | HttpWebhookActionParams;
 
+/**
+ * The credentials of a Microsoft or Google action as the API answers them: which account the action
+ * uses, without its secrets. `client_secret` and `refresh_token` are stored and used when the agent
+ * runs the action, but never answered.
+ */
+export interface VoiceActionPublicCredentials {
+  /** Microsoft actions only. */
+  tenant?: string;
+  client_id: string;
+}
+
+/**
+ * The credentials `voiceActions.update` takes, for a Microsoft or Google action. Only `client_id` is
+ * required: a field left out keeps the stored value — the secrets included —, and one sent replaces
+ * it, so the credentials a read returned can be sent back as they are. Merged over the stored ones,
+ * they must be complete for the action's provider (Microsoft: `tenant`, `client_id`, `client_secret`;
+ * Google: `client_id`, `client_secret`, `refresh_token`), or the API answers a 422
+ * (`credentials are incomplete for a <provider> action`). A field the provider does not have is
+ * dropped.
+ *
+ * When `client_id` or `tenant` changes, send the new client's secret (and, for Google, its
+ * `refresh_token`) along: the API does not check that a kept secret belongs to the new client.
+ */
+export interface VoiceActionCredentialsUpdate {
+  tenant?: string;
+  client_id: string;
+  client_secret?: string;
+  refresh_token?: string;
+}
+
 /** The fields of a voice action that `voiceActions.update` can change. */
 export interface VoiceActionUpdateFields {
   name?: string;
@@ -111,9 +141,11 @@ export interface VoiceActionUpdateFields {
    * required ones such as `destination` included.
    */
   config?: Partial<ScheduleEventConfig & SendEmailConfig>;
-  credentials?: MicrosoftCredentials | GoogleCredentials;
+  /** Merged over the stored credentials, so a secret left out is kept; see the type. */
+  credentials?: VoiceActionCredentialsUpdate;
   phone?: string;
   endpoint?: string;
+  /** Left out, the stored one is kept: the API never answers it. */
   authorization_token?: string;
   message?: string;
 }
@@ -130,10 +162,11 @@ export type VoiceActionUpdateParams = {
 export type VoiceActionType = OpenEnum<'SCHEDULE_EVENT' | 'SEND_EMAIL' | 'SEND_SMS' | 'TRANSFER_CALL' | 'HTTP_WEBHOOK'>;
 
 /**
- * A voice action, as stored.
+ * A voice action, as the API answers it — on create, list, get and update alike.
  *
- * It carries the credentials and the `authorization_token` as given — treat it as a secret, and
- * keep it out of logs.
+ * The secrets are never answered: `credentials` comes without `client_secret` and `refresh_token`,
+ * and the action without `authorization_token`. The API stores them and uses them when the agent
+ * runs the action, and `voiceActions.update` keeps them when they are left out.
  */
 export interface VoiceAction {
   /** The action id, sent as a voice agent's `action_id`. */
@@ -141,10 +174,9 @@ export interface VoiceAction {
   name: string;
   type: VoiceActionType;
   provider: OpenEnum<'microsoft' | 'google' | 'internal'>;
-  credentials?: MicrosoftCredentials | GoogleCredentials;
+  credentials?: VoiceActionPublicCredentials;
   config?: Partial<ScheduleEventConfig & SendEmailConfig>;
   phone?: string;
   endpoint?: string;
-  authorization_token?: string;
   message?: string;
 }

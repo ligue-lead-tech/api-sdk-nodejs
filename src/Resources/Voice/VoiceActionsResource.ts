@@ -9,7 +9,9 @@ import type { VoiceAction, VoiceActionCreateParams, VoiceActionUpdateParams } fr
  * What a voice agent can do during a call: book a meeting, send an email or an SMS, transfer the
  * call, or POST to an endpoint. An agent points at one through `action_id`.
  *
- * Answers carry the action's credentials and `authorization_token` as stored: keep them out of logs.
+ * Answers never carry the secrets (`client_secret`, `refresh_token`, `authorization_token`): the API
+ * stores them and uses them when the agent runs the action. `credentials` comes back with `tenant`
+ * (Microsoft) and `client_id` only.
  */
 export class VoiceActionsResource extends ApiResource {
   /**
@@ -82,14 +84,17 @@ export class VoiceActionsResource extends ApiResource {
 
   /**
    * Changes some fields of a voice action. The fields sent replace the stored ones; `config`, in
-   * particular, is replaced as a whole, so send it complete.
+   * particular, is replaced as a whole, so send it complete. `credentials` is the exception: it is
+   * merged over the stored ones, so a secret left out is kept and the credentials a read returned
+   * can be sent back as they are. An `authorization_token` left out is kept too.
    *
    * @param {string} id - The action id.
    * @param {VoiceActionUpdateParams} params - The fields to change, at least one.
    * @param {RequestOptions} [options] - Per-call options.
    *
    * @throws {LigueLeadNotFoundError} When the action does not exist or belongs to another client.
-   * @throws {LigueLeadValidationError} When the body is refused.
+   * @throws {LigueLeadValidationError} When the body is refused, or the credentials, merged over the
+   *   stored ones, are incomplete for the action's provider.
    *
    * @returns {Promise<VoiceAction>} The action after the update.
    */
