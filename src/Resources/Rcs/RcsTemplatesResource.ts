@@ -87,7 +87,7 @@ export class RcsTemplatesResource extends ApiResource {
    * @param {RequestOptions} [options] - Per-call options.
    *
    * @throws {LigueLeadValidationError} When the body is refused, for example when the card has no
-   *   image.
+   *   image, a call button dials a number outside `+55`, or two reply buttons share a title.
    * @throws {LigueLeadUnsupportedMediaTypeError} When the media is not a supported image format.
    * @throws {LigueLeadPayloadTooLargeError} When the media is too large.
    *
@@ -105,15 +105,17 @@ export class RcsTemplatesResource extends ApiResource {
   }
 
   /**
-   * Creates a carousel of 2 to 10 cards. Every card needs an image (JPEG, PNG, GIF or WEBP; the API
+   * Creates a carousel of 2 to 6 cards. Every card needs an image (JPEG, PNG, GIF or WEBP; the API
    * refuses any other content), and the same number of buttons, of the same types in the same order.
+   * Reply button titles must not repeat, on a card or across the cards.
    *
    * @param {RcsCarouselTemplateCreateParams} params - Agent, title and cards, each with `media_url`
    *   or `media_file`.
    * @param {RequestOptions} [options] - Per-call options.
    *
-   * @throws {LigueLeadValidationError} When the body is refused, for example when a carousel card has
-   *   no image or the cards' buttons are out of step.
+   * @throws {LigueLeadValidationError} When the body is refused, for example when there are more than
+   *   6 cards, a carousel card has no image, the cards' buttons are out of step, a call button dials a
+   *   number outside `+55`, or two reply buttons share a title.
    * @throws {LigueLeadUnsupportedMediaTypeError} When the media is not a supported image format.
    * @throws {LigueLeadPayloadTooLargeError} When the media is too large.
    *

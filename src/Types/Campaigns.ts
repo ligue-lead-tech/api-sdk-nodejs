@@ -11,8 +11,9 @@ export interface CampaignAccepted {
 /** Fields every send accepts. */
 interface SendCommonParams {
   /**
-   * Recipients, 1 to 10000 per request. Digits plus `+ ( ) -`, 10 to 16 digits each
-   * (`11999999999`, `+5511999999999`).
+   * Recipients, 1 to 10000 per request. A Brazilian number takes digits plus `+ ( ) -`, 10 to 16
+   * digits (`11999999999`, `+5511999999999`); on voice, a number of another country is checked
+   * against that country's numbering plan instead (see `ddi`).
    */
   phones: string[];
   /**
@@ -23,8 +24,18 @@ interface SendCommonParams {
   webhook_url?: string;
 }
 
+/** `ddi` of the sends that deliver only to Brazil: SMS and RCS. */
+interface BrazilOnlyDdiParams {
+  /**
+   * Country calling code of the numbers, as a string or a number, with or without `+`. SMS and RCS
+   * deliver only to Brazil, so the only accepted value is `55`, also the default; any other is
+   * refused with a 422.
+   */
+  ddi?: string | number;
+}
+
 /** Body of `campaigns.sms.send`. */
-export interface SmsSendParams extends SendCommonParams {
+export interface SmsSendParams extends SendCommonParams, BrazilOnlyDdiParams {
   /** Text, 1 to 1600 characters. Blocked words are refused with a 422. */
   message: string;
   title?: string;
@@ -34,12 +45,35 @@ export interface SmsSendParams extends SendCommonParams {
   group_id?: string;
 }
 
+/** `ddi` of the voice sends: `campaigns.voice` and `campaigns.voiceAi`. */
+interface VoiceDdiParams {
+  /**
+   * Country calling code put in front of each number that does not carry it yet, as a string or a
+   * number, with or without `+` (`'52'`, `'+52'` or `52`); `55` (Brazil) when left out. A code that is
+   * not 1 to 3 digits, or that no country has, is refused with a 422.
+   *
+   * A number outside Brazil is checked against its country's numbering plan: a national number gets
+   * the code in front (`ddi: '52'` and `5512345678` dial `525512345678`), one already carrying it is
+   * dialed as it is, and anything else is refused with a 422 that points to its position in `phones`.
+   * A valid number written with `+` keeps its own country, so one request may mix countries, except
+   * that on `ddi` 55 (the default) a `+` number whose digits are also a valid Brazilian number stays
+   * in Brazil (`+33992761304` is a mobile of area code 33): send the country in `ddi` to dial it
+   * abroad. A `+` number that is not valid for its country is read with the `ddi`.
+   */
+  ddi?: string | number;
+}
+
 /** Body of `campaigns.voice.send`. */
-export interface VoiceSendParams extends SendCommonParams {
+export interface VoiceSendParams extends SendCommonParams, VoiceDdiParams {
   title: string;
   /** Id of an audio from `voice.uploads`, as a number or a numeric string. */
   voice_upload_id: number | string;
-  /** Skips the Brazilian phone format check, for international numbers. */
+  /**
+   * With `true`, each number is dialed as sent, without the `+`, through the international route,
+   * with no number check, and `ddi` is not applied (it must still be a valid code).
+   *
+   * @deprecated Send `ddi` instead; the API will remove this field.
+   */
   is_international?: boolean;
   /** Extra attempts for numbers that did not answer, 1 to 3. */
   retry_attempts?: number;
@@ -60,7 +94,7 @@ export interface TemplateVariable {
 }
 
 /** An RCS send with free text, through one of the app's approved agents. */
-export interface RcsMessageSendParams extends SendCommonParams {
+export interface RcsMessageSendParams extends SendCommonParams, BrazilOnlyDdiParams {
   /** Id (UUID) of an approved RCS agent of this app. */
   agent_id: string;
   /** Text, up to 306 characters: it is also the SMS fallback when RCS cannot be delivered. */
@@ -70,7 +104,7 @@ export interface RcsMessageSendParams extends SendCommonParams {
 }
 
 /** An RCS send of a template; the agent comes from the template. */
-export interface RcsTemplateSendParams extends SendCommonParams {
+export interface RcsTemplateSendParams extends SendCommonParams, BrazilOnlyDdiParams {
   template_id: string;
   /** Values of the template's placeholders; the template's defaults fill the rest. */
   template_variables?: TemplateVariable[];
@@ -157,7 +191,7 @@ export interface VoiceAiRecipient {
 }
 
 /** Body of `campaigns.voiceAi.send`. */
-export interface VoiceAiSendParams {
+export interface VoiceAiSendParams extends VoiceDdiParams {
   /** 1 to 200 characters. */
   title: string;
   /** Id (UUID) of the voice agent that makes the calls. */

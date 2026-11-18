@@ -5,6 +5,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the ve
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-11-18
+
+### Added
+
+- `ddi` on every send, the
+  country calling code the API puts in front of each number that does not carry it yet, as a string
+  or a number, `55` when left out. On `campaigns.voice` and `campaigns.voiceAi`, a number outside
+  Brazil is checked against its country's numbering plan, and a valid number written with `+` keeps
+  its own country, so one request may mix countries — except that on the default `ddi`, a `+`
+  number whose digits are also a valid Brazilian number stays in Brazil (`+33992761304` is a mobile
+  of area code 33): send the country in `ddi` to dial it abroad. SMS and RCS deliver only to Brazil:
+  their `ddi` accepts only `55`, and any other is refused with a 422.
+
+### Changed
+
+- The doc comments and the README follow three rules the API now applies to every new RCS template: a carousel has 2 to 6 cards
+  (it was 10), a call button's `phone_number` is a Brazilian number (`+55`), and no two reply buttons
+  of a template share a title — on the same card or across the carousel's cards, compared trimmed and
+  in Unicode NFC, case-sensitive. The types do not change: the API refuses a template that breaks a
+  rule (422, `LigueLeadValidationError`). Templates created before keep working.
+
+### Deprecated
+
+- `is_international` on `campaigns.voice.send`: send `ddi` instead. The API still accepts it, with
+  the same behavior as before, and will remove it.
+
 ## [2.0.0] — 2026-11-05
 
 A major release: the entries marked **Breaking** stop TypeScript code written against 1.x from

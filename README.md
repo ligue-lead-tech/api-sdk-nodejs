@@ -94,6 +94,18 @@ await client.campaigns.voice.send({
   retry_interval_min: 30,
 });
 
+// Voice to another country: ddi is put in front of each number that does not carry it, and a
+// valid number written with + keeps its own country. On the default ddi (55), a + number whose
+// digits are also a valid Brazilian number stays in Brazil (+33992761304 is area code 33): send
+// the country in ddi to dial it abroad. SMS and RCS deliver only to Brazil, so their ddi can only
+// be 55
+await client.campaigns.voice.send({
+  title: 'Recordatorio',
+  voice_upload_id: 436514,
+  phones: ['5512345678', '+12125550100'], // dialed as 525512345678 and 12125550100
+  ddi: '52',
+});
+
 // RCS: free text through an approved agent of the app…
 await client.campaigns.rcs.send({ phones: ['11999999999'], agent_id: '7b3c1e90-…', message: 'Olá!' });
 // …or a template (the agent comes from the template)
@@ -197,7 +209,7 @@ const templates = await client.rcs.templates.list();
 A card always carries an image, in `media_url` or `media_file`, and it must be an image (JPEG,
 PNG, GIF or WEBP): the API refuses any other content on a card. A template with no image has no
 buttons either, and is a text one (`createText`). There is also `createMedia` (header, body and one
-image or video) and `createCarousel` (2 to 10 cards, each with its own image, all with the same
+image or video) and `createCarousel` (2 to 6 cards, each with its own image, all with the same
 number and type of buttons):
 
 ```ts
@@ -217,6 +229,13 @@ await client.rcs.templates.createCarousel({
   ],
 });
 ```
+
+A call button (`dial_call`) dials only Brazilian numbers: `phone_number` in E.164 starting with
+`+55`. No two reply buttons of a template may share a title, on the same card or on different cards
+of a carousel, so that a tap always points to a single button; titles are compared trimmed and in
+Unicode NFC, case-sensitive (`Sim` and ` Sim ` clash, `Sim` and `sim` do not). The types cannot
+check either rule, nor the number of carousel cards: the API refuses the template (422,
+`LigueLeadValidationError`). Templates created before these rules keep working.
 
 The types refuse a card or a carousel card without media, and `media_url` and `media_file`
 together; they cannot tell an image from a video, which the API checks. The media in `media_file` travels inside the JSON, a third larger than the file,

@@ -61,6 +61,14 @@ describe('client.campaigns.voice', () => {
 
     await expect(createClient().campaigns.voice.send(params)).resolves.toEqual(ACCEPTED);
   });
+
+  it('sends the ddi as given, for the API to put in front of each number', async () => {
+    const params = { title: 'Lembrete', voice_upload_id: 436514, phones: ['5512345678', '+12125550100'], ddi: '52' };
+
+    appApi().post('/v1/voice', params).reply(200, { message: 'Voice accepted successfully', data: ACCEPTED });
+
+    await expect(createClient().campaigns.voice.send(params)).resolves.toEqual(ACCEPTED);
+  });
 });
 
 describe('client.campaigns.rcs', () => {

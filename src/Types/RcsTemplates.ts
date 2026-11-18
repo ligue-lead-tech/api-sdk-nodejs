@@ -2,10 +2,17 @@ import type { DataUri } from '../Support/DataUri';
 import type { TemplateVariable } from './Campaigns';
 import type { OpenEnum } from './Shared';
 
-/** A button that sends `postback_data` back as an `rcs.inbound.postback` event. */
+/**
+ * A button that sends `postback_data` back as an `rcs.inbound.postback` event.
+ *
+ * No two reply buttons of a template may share a title — on the same card or on different cards
+ * of a carousel — so that a tap always points to a single button. Titles are compared trimmed and
+ * in Unicode NFC, case-sensitive: `Sim` and ` Sim ` clash, `Sim` and `sim` do not. The type cannot
+ * check it; the API refuses a new template with a repeated title (422).
+ */
 export interface RcsReplyButton {
   type: 'reply';
-  /** Up to 25 characters. */
+  /** Up to 25 characters, unique among the reply buttons of the template. */
   title: string;
   /** Up to 2048 characters. */
   postback_data?: string;
@@ -25,7 +32,10 @@ export interface RcsDialCallButton {
   type: 'dial_call';
   /** Up to 25 characters. */
   title: string;
-  /** E.164 (`+5511987654321`). */
+  /**
+   * A Brazilian number in E.164, starting with `+55` (`+5511987654321`). The type takes any string;
+   * the API refuses a new template whose call button dials another country (422).
+   */
   phone_number: string;
 }
 
@@ -96,7 +106,10 @@ export type RcsCarouselCard = RcsMediaSource & {
   buttons: RcsTemplateButton[];
 };
 
-/** Body of `rcs.templates.createCarousel`: 2 to 10 cards. */
+/**
+ * Body of `rcs.templates.createCarousel`: 2 to 6 cards. The type takes any count; the API refuses a
+ * new carousel with more than 6 (422).
+ */
 export interface RcsCarouselTemplateCreateParams extends RcsTemplateBaseParams {
   cards: RcsCarouselCard[];
 }
